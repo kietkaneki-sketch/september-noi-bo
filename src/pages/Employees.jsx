@@ -4,6 +4,7 @@ import { UserPlus } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import Modal from '../components/Modal'
 import StatusBadge from '../components/StatusBadge'
+import { slugifyUsername, sanitizeUsernameChars, USERNAME_PATTERN } from '../lib/slug'
 
 const AVATAR_COLORS = ['#b6893f', '#5b7a9a', '#8a9a5b', '#9a5b7a', '#a05b5b', '#5b9a8f']
 
@@ -14,17 +15,31 @@ export default function Employees() {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
+  const [usernameTouched, setUsernameTouched] = useState(false)
   const [newDept, setNewDept] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const employees = data.users.filter((u) => u.role === 'employee')
 
+  const handleFullNameChange = (value) => {
+    setForm((f) => ({ ...f, fullName: value, username: usernameTouched ? f.username : slugifyUsername(value) }))
+  }
+
+  const handleUsernameChange = (value) => {
+    setUsernameTouched(true)
+    setForm((f) => ({ ...f, username: sanitizeUsernameChars(value) }))
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     if (!form.username.trim() || !form.fullName.trim() || !form.department) {
       setError('Vui lòng nhập đủ tên đăng nhập, họ tên và phòng ban.')
+      return
+    }
+    if (!USERNAME_PATTERN.test(form.username.trim())) {
+      setError('Tên đăng nhập chỉ gồm chữ không dấu, số, dấu chấm/gạch dưới, không khoảng trắng (vd: an.nguyen).')
       return
     }
     setSubmitting(true)
@@ -36,6 +51,7 @@ export default function Employees() {
         avatarColor: AVATAR_COLORS[employees.length % AVATAR_COLORS.length],
       })
       setForm(emptyForm)
+      setUsernameTouched(false)
       setOpen(false)
     } catch (err) {
       setError(err.message)
@@ -152,10 +168,16 @@ export default function Employees() {
           {error && <div className="text-sm rounded-lg px-3 py-2 bg-rose-500/10 text-rose-500">{error}</div>}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Họ và tên *">
-              <input value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} className="input" style={inputStyle} />
+              <input value={form.fullName} onChange={(e) => handleFullNameChange(e.target.value)} style={inputStyle} placeholder="vd: Nguyễn Hoàng An" />
             </Field>
             <Field label="Tên đăng nhập *">
-              <input value={form.username} onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))} style={inputStyle} />
+              <input
+                value={form.username}
+                onChange={(e) => handleUsernameChange(e.target.value)}
+                style={inputStyle}
+                placeholder="vd: an.nguyen"
+              />
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Tự động gợi ý từ họ tên — không dấu, không khoảng trắng.</p>
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">

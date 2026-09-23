@@ -53,7 +53,12 @@ Deno.serve(async (req) => {
       return json({ error: 'Thiếu tên đăng nhập, họ tên hoặc phòng ban.' }, 400)
     }
 
-    const authEmail = `${String(username).trim().toLowerCase()}@september.internal`
+    const cleanUsername = String(username).trim().toLowerCase()
+    if (!/^[a-z0-9][a-z0-9._-]*$/.test(cleanUsername)) {
+      return json({ error: 'Tên đăng nhập chỉ gồm chữ không dấu, số, dấu chấm/gạch dưới, không khoảng trắng (vd: an.nguyen).' }, 400)
+    }
+
+    const authEmail = `${cleanUsername}@september.internal`
 
     const { data: created, error: createError } = await admin.auth.admin.createUser({
       email: authEmail,
@@ -70,7 +75,7 @@ Deno.serve(async (req) => {
 
     const { error: profileError } = await admin.from('profiles').insert({
       id: created.user.id,
-      username: String(username).trim().toLowerCase(),
+      username: cleanUsername,
       full_name: fullName,
       role: 'employee',
       department,

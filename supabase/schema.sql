@@ -139,7 +139,22 @@ create policy "announcements_write" on public.announcements for all using (is_ad
 
 -- ============ REALTIME ============
 -- Cho phép app tự cập nhật ngay khi có người khác đăng ký ca / gửi đơn, không cần bấm refresh.
-alter publication supabase_realtime add table public.shifts, public.requests, public.announcements, public.profiles;
+-- Bọc trong DO block + kiểm tra tồn tại trước vì project Supabase mới có thể đã tự thêm
+-- sẵn một số bảng vào publication này — ALTER PUBLICATION ADD TABLE thẳng sẽ báo lỗi
+-- "already member of publication" nếu chạy lại hoặc bảng đã có sẵn.
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['shifts', 'requests', 'announcements', 'profiles'] loop
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
+    ) then
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    end if;
+  end loop;
+end $$;
 
 -- ============ SEED (chỉ chạy 1 lần lúc mới tạo project) ============
 
