@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #111111;
+  --color-paper: #ffffff;
+  --color-gold: #b6893f;
+  --color-gold-soft: #e9d9b8;
+}
+
+:root {
+  --bg: #f5f4f1;
+  --surface: #ffffff;
+  --surface-2: #f0eee9;
+  --border: #e3e0d8;
+  --text: #17160f;
+  --text-muted: #6f6a5e;
+  --accent: #a37a34;
+  --accent-contrast: #ffffff;
+  --shadow: 0 1px 2px rgba(20, 16, 8, 0.03), 0 6px 20px rgba(20, 16, 8, 0.05);
+}
+
+.dark {
+  --bg: #0b0a08;
+  --surface: #161410;
+  --surface-2: #1d1a14;
+  --border: #2a2620;
+  --text: #f2efe8;
+  --text-muted: #9c9689;
+  --accent: #d7ac6b;
+  --accent-contrast: #16140f;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
