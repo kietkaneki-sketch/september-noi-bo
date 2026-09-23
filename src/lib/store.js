@@ -15,6 +15,22 @@ function must(error) {
   if (error) throw new Error(error.message)
 }
 
+async function callAdminFunction(name, body) {
+  const { data, error } = await supabase.functions.invoke(name, { body })
+  if (error) {
+    let msg = error.message
+    try {
+      const errBody = await error.context.json()
+      if (errBody?.error) msg = errBody.error
+    } catch {
+      /* keep default message */
+    }
+    throw new Error(msg)
+  }
+  if (data?.error) throw new Error(data.error)
+  return data
+}
+
 // ---- row -> app-shape mappers ----
 
 const mapDirectoryUser = (row) => ({
@@ -155,23 +171,14 @@ export const db = {
   },
 
   // ---- Users / employees ----
-  // Creating a login account needs the service-role key, which must never reach the
-  // browser — so this calls a Supabase Edge Function that does the privileged part
-  // server-side, after checking the caller is really an admin.
+  // Creating a login account (or resetting one's password) needs the service-role key,
+  // which must never reach the browser — so both go through Edge Functions that do the
+  // privileged part server-side, after checking the caller is really an admin.
   async createEmployee(payload) {
-    const { data, error } = await supabase.functions.invoke('admin-create-employee', { body: payload })
-    if (error) {
-      let msg = error.message
-      try {
-        const body = await error.context.json()
-        if (body?.error) msg = body.error
-      } catch {
-        /* keep default message */
-      }
-      throw new Error(msg)
-    }
-    if (data?.error) throw new Error(data.error)
-    return data
+    return callAdminFunction('admin-create-employee', payload)
+  },
+  async resetEmployeePassword(userId, newPassword) {
+    return callAdminFunction('admin-reset-password', { userId, newPassword })
   },
   async getEmployeeDetail(id) {
     const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single()

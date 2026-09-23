@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { UserPlus } from 'lucide-react'
+import { UserPlus, KeyRound } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import Modal from '../components/Modal'
 import StatusBadge from '../components/StatusBadge'
@@ -11,7 +11,7 @@ const AVATAR_COLORS = ['#b6893f', '#5b7a9a', '#8a9a5b', '#9a5b7a', '#a05b5b', '#
 const emptyForm = { username: '', password: '', fullName: '', department: '', position: '', phone: '', email: '' }
 
 export default function Employees() {
-  const { data, createEmployee, setUserActive, addDepartment } = useApp()
+  const { data, createEmployee, setUserActive, addDepartment, resetEmployeePassword } = useApp()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
@@ -19,6 +19,36 @@ export default function Employees() {
   const [newDept, setNewDept] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  const [resetTarget, setResetTarget] = useState(null)
+  const [newPassword, setNewPassword] = useState('')
+  const [resetError, setResetError] = useState('')
+  const [resetSubmitting, setResetSubmitting] = useState(false)
+  const [resetDone, setResetDone] = useState(false)
+
+  const openReset = (u) => {
+    setResetTarget(u)
+    setNewPassword('')
+    setResetError('')
+    setResetDone(false)
+  }
+
+  const submitReset = async () => {
+    if (newPassword.length < 6) {
+      setResetError('Mật khẩu mới cần ít nhất 6 ký tự.')
+      return
+    }
+    setResetSubmitting(true)
+    setResetError('')
+    try {
+      await resetEmployeePassword(resetTarget.id, newPassword)
+      setResetDone(true)
+    } catch (err) {
+      setResetError(err.message)
+    } finally {
+      setResetSubmitting(false)
+    }
+  }
 
   const employees = data.users.filter((u) => u.role === 'employee')
 
@@ -127,6 +157,13 @@ export default function Employees() {
                       Hồ sơ
                     </button>
                     <button
+                      onClick={() => openReset(u)}
+                      className="flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium"
+                      style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
+                    >
+                      <KeyRound size={12} /> Đặt lại MK
+                    </button>
+                    <button
                       onClick={() => setUserActive(u.id, !u.active).catch((err) => alert(err.message))}
                       className="rounded-lg border px-3 py-1.5 text-xs font-medium"
                       style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
@@ -219,6 +256,51 @@ export default function Employees() {
             </Field>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        open={!!resetTarget}
+        onClose={() => setResetTarget(null)}
+        title={`Đặt lại mật khẩu — ${resetTarget?.fullName || ''}`}
+        footer={
+          resetDone ? (
+            <button onClick={() => setResetTarget(null)} className="rounded-lg px-4 py-2 text-sm font-semibold" style={{ background: 'var(--accent)', color: 'var(--accent-contrast)' }}>
+              Đóng
+            </button>
+          ) : (
+            <>
+              <button onClick={() => setResetTarget(null)} className="rounded-lg px-4 py-2 text-sm font-medium" style={{ color: 'var(--text-muted)' }}>Hủy</button>
+              <button
+                onClick={submitReset}
+                disabled={resetSubmitting}
+                className="rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-60"
+                style={{ background: 'var(--accent)', color: 'var(--accent-contrast)' }}
+              >
+                {resetSubmitting ? 'Đang lưu…' : 'Đặt lại mật khẩu'}
+              </button>
+            </>
+          )
+        }
+      >
+        {resetDone ? (
+          <div className="text-sm rounded-lg px-3 py-2 bg-emerald-500/10 text-emerald-600">
+            Đã đặt lại mật khẩu cho @{resetTarget?.username}. Báo mật khẩu mới này cho nhân viên (nhắn riêng, đừng gửi nhóm chung).
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              Đặt mật khẩu mới cho <b>@{resetTarget?.username}</b>. Mật khẩu cũ sẽ không còn dùng được nữa.
+            </p>
+            {resetError && <div className="text-sm rounded-lg px-3 py-2 bg-rose-500/10 text-rose-500">{resetError}</div>}
+            <input
+              autoFocus
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Mật khẩu mới (ít nhất 6 ký tự)"
+              style={inputStyle}
+            />
+          </div>
+        )}
       </Modal>
     </div>
   )

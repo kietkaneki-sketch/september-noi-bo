@@ -76,6 +76,7 @@ export function AppProvider({ children }) {
   const actions = useMemo(
     () => ({
       createEmployee: withRefresh(db.createEmployee),
+      resetEmployeePassword: db.resetEmployeePassword,
       updateUser: withRefresh(db.updateUser),
       setUserActive: withRefresh(db.setUserActive),
       addDepartment: withRefresh(db.addDepartment),
